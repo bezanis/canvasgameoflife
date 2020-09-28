@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0px; background-color: #000">
+<canvas id="myCanvas" width="50" height="50" style="width:100%;"></canvas>
+<br/>
+<script>
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+randomize();
+
+var columns = canvas.width;
+var rows = canvas.height;
+var middleRow = Math.floor(rows/2);
+var middleColumn = Math.floor(columns/2);
+
+function setColors() {
+    var imageDataOld = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var oldData = imageDataOld.data;
+    var imageDataNew = ctx.createImageData(canvas.width, canvas.height);
+    var newData = imageDataNew.data;
+
+    for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < columns; c++) {
+            var pixel = getPixel(oldData, r, c);
+            var adjacentFilledPixels = getAdjacentFilledPixels(oldData, r, c);
+            if (pixel.alpha === 255 && (adjacentFilledPixels.length === 2 || adjacentFilledPixels.length === 3)) {
+                //live - 2 or 3 neighbors
+                setPixel(newData, r, c, pixel.red, pixel.green, pixel.blue, pixel.alpha);
+            } else if (pixel.alpha < 255 && adjacentFilledPixels.length === 3) {
+                //birth - exactly 3 neighbors
+                adjacentPixel = adjacentFilledPixels[Math.floor(Math.random() * 3)];
+                setPixel(newData, r, c, adjacentPixel.red, adjacentPixel.green, adjacentPixel.blue, 255);
+            } else {
+                //die - lonely or overcrowded
+                setPixel(newData, r, c, pixel.red, pixel.green, pixel.blue, Math.max(0, pixel.alpha - 10));
+            }
+        }
+    }
+
+    drawCross(newData, Math.floor(rows/4),Math.floor(columns/4));
+    drawCross(newData, Math.floor(rows/4),Math.floor(columns/4)*3);
+    drawCross(newData, Math.floor(rows/2),Math.floor(columns/2));
+    drawCross(newData, Math.floor(rows/4)*3,Math.floor(columns/4));
+    drawCross(newData, Math.floor(rows/4)*3,Math.floor(columns/4)*3);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.putImageData(imageDataNew, 0, 0);
+
+}
+
+function setPixel(data, row, column, red, green, blue, alpha) {
+    data[row*columns*4+column*4] = red;
+    data[row*columns*4+column*4+ 1] = green;
+    data[row*columns*4+column*4 + 2] = blue;
+    data[row*columns*4+column*4 + 3] = alpha;
+}
+
+function getPixel(data, row, column) {
+    return {
+        red: data[row*columns*4+column*4],
+        green: data[row*columns*4+column*4+ 1],
+        blue: data[row*columns*4+column*4+ 2],
+        alpha: data[row*columns*4+column*4+ 3]
+    };
+}
+
+function getAdjacentFilledPixels(data, row, column) {
+    var filledPixels = [];
+    if (row > 0) {
+        if (column > 0) {
+            var topLeftPixel = getPixel(data, row - 1, column - 1);
+            if (topLeftPixel.alpha === 255) {
+                filledPixels.push(topLeftPixel);
+            }
+        }
+        var topMiddlePixel = getPixel(data, row - 1, column);
+        if (topMiddlePixel.alpha === 255) {
+            filledPixels.push(topMiddlePixel);
+        }
+        if (column < columns - 1) {
+            var topRightPixel = getPixel(data, row - 1, column + 1);
+            if (topRightPixel.alpha === 255) {
+                filledPixels.push(topRightPixel);
+            }
+        }
+    }
+    if (column > 0) {
+        var leftPixel = getPixel(data, row, column - 1);
+        if (leftPixel.alpha === 255) {
+            filledPixels.push(leftPixel);
+        }
+    }
+    if (column < columns - 1) {
+        var rightPixel = getPixel(data, row, column + 1);
+        if (rightPixel.alpha === 255) {
+            filledPixels.push(rightPixel);
+        }
+    }
+    if (row < rows) {
+        if (column > 0) {
+            var bottomLeftPixel = getPixel(data, row + 1, column - 1);
+            if (bottomLeftPixel.alpha === 255) {
+                filledPixels.push(bottomLeftPixel);
+            }
+        }
+        var bottomMiddlePixel = getPixel(data, row + 1, column);
+        if (bottomMiddlePixel.alpha === 255) {
+            filledPixels.push(bottomMiddlePixel);
+        }
+        if (column < columns - 1) {
+            var bottomRightPixel = getPixel(data, row + 1, column + 1);
+            if (bottomRightPixel.alpha === 255) {
+                filledPixels.push(bottomRightPixel);
+            }
+        }
+    }
+    return filledPixels;
+}
+
+function randomColor() {
+    return Math.floor(Math.random() * 256);
+}
+
+function drawCross(data, originRow, originColumn) {
+    //Randomize pixel cross
+    if (Math.random() < .5) {
+        setPixel(data, originRow - 2, originColumn, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow - 1, originColumn, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow, originColumn - 2, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow, originColumn - 1, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow, originColumn, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow, originColumn + 1, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow, originColumn + 2, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow + 1, originColumn, randomColor(), randomColor(), randomColor(), 255);
+    }
+    if (Math.random() < .5) {
+        setPixel(data, originRow + 2, originColumn, randomColor(), randomColor(), randomColor(), 255);
+    }
+}
+
+function randomize() {
+    var imageData = ctx.createImageData(canvas.width, canvas.height);
+    var data = imageData.data;
+    for (var i = 0; i < data.length; i += 4) {
+        data[i] = Math.floor(Math.random() * 256);     // red
+        data[i + 1] = Math.floor(Math.random() * 256); // green
+        data[i + 2] = Math.floor(Math.random() * 256); // blue
+        data[i + 3] = Math.floor(Math.random()*2)*255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+document.getElementById("myCanvas").addEventListener("click", function() {
+    randomize();
+});
+
+setInterval(function(){
+    setColors();
+}, 20);
+
+</script>
+</body>
+</html>
